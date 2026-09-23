@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+No change in behaviour.
+
+- Clearer help text for the credential's Base URL.
+- README: `npm run dev` needs no Docker.
+
 ## 0.1.0
 
 First release.
