@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-droply",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Publish HTML, files and static sites on Droply from n8n: create and update sites, save drafts, publish, roll back, and manage passwords and expiry.",
 	"license": "MIT",
 	"homepage": "https://droply.host/docs/integrations/n8n",

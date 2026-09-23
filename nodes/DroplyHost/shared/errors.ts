@@ -1,7 +1,11 @@
 import { retryAfterSeconds } from './client';
 import type { IDataObject } from 'n8n-workflow';
 
-export type Explanation = { message: string; description: string };
+/**
+ * `withheld`: the server's own answer must not travel with the error either (it is attached to n8n's
+ * error details by default), because it holds something an AI agent must not be handed.
+ */
+export type Explanation = { message: string; description: string; withheld?: true };
 
 /** What the user sees for each parameter the API names in a 422. */
 const FIELD_LABELS: Record<string, string> = {
@@ -14,11 +18,25 @@ const FIELD_LABELS: Record<string, string> = {
 	password: 'Password',
 	password_protected: 'Remove Password',
 	expires_at: 'Expire At',
-	confirm: 'Deletion Confirmation',
 	entry: 'Entry',
 	draft: 'Publish As Draft',
 	host: 'Site URL',
 };
+
+/**
+ * A delete refused because the site is in a space protected against accidental deletion. Droply now
+ * answers 403; an older Droply answered 422 on `confirm` and named the subdomain to send. Both get this
+ * text, and neither repeats the server's words: an AI agent using the node as a tool must not be handed
+ * a phrase it can send back.
+ */
+function protectedDeletion(): Explanation {
+	return {
+		message: 'This site is in a space protected against accidental deletion',
+		description:
+			'Delete it from the Droply dashboard, where you type its address, or turn off deletion protection for its space first.',
+		withheld: true,
+	};
+}
 
 /**
  * Turn a non-success answer from Droply into a message that says what happened and a description that
@@ -43,6 +61,9 @@ export function explain(
 	}
 
 	if (status === 403) {
+		if (/protected against accidental deletion/i.test(serverMessage)) {
+			return protectedDeletion();
+		}
 		if (/plan does not include/i.test(serverMessage)) {
 			return {
 				message: serverMessage,
@@ -94,17 +115,16 @@ export function explain(
 
 	if (status === 422) {
 		const fields = fieldMessages(body);
+		if (fields.some((field) => field.field === 'confirm')) {
+			return protectedDeletion();
+		}
+
 		const first = fields[0]?.text ?? serverMessage ?? 'Droply could not accept these values';
 		const lines = fields.map(
 			(field) => `'${FIELD_LABELS[field.field] ?? field.field}': ${field.text}`,
 		);
 		const hints: string[] = [];
 
-		if (fields.some((field) => field.field === 'confirm')) {
-			hints.push(
-				"This site is in a space protected against accidental deletion: type its subdomain in 'Deletion Confirmation'.",
-			);
-		}
 		if (fields.some((field) => /upgrade/i.test(field.text))) {
 			hints.push(`Upgrade at ${billingPage}.`);
 		}

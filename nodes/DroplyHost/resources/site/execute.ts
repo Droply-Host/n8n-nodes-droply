@@ -53,11 +53,7 @@ export async function executeSite(
 
 		case 'delete': {
 			const site = await resolveSite(client, siteParameter(ctx, i));
-			await deleteSite(
-				client,
-				site.id,
-				String(ctx.getNodeParameter('deletionConfirmation', i, '')),
-			);
+			await deleteSite(client, site.id);
 			return { deleted: true };
 		}
 

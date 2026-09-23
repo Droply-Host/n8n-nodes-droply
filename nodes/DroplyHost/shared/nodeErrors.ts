@@ -22,9 +22,14 @@ export function toNodeError(
 	}
 
 	if (error instanceof DroplyHttpError) {
-		const { message, description } = explain(error.status, error.body, error.headers, baseUrl);
+		const { message, description, withheld } = explain(
+			error.status,
+			error.body,
+			error.headers,
+			baseUrl,
+		);
 		const response = (
-			typeof error.body === 'object' && error.body !== null ? error.body : { message }
+			!withheld && typeof error.body === 'object' && error.body !== null ? error.body : { message }
 		) as JsonObject;
 
 		return new NodeApiError(ctx.getNode(), response, {

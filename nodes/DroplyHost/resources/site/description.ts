@@ -37,7 +37,8 @@ export const siteOperations: INodeProperties[] = [
 			{
 				name: 'Delete',
 				value: 'delete',
-				description: 'Delete a site permanently',
+				description:
+					'Delete a site permanently. Sites in a space protected against accidental deletion are deleted from the Droply dashboard only.',
 				action: 'Delete a site',
 			},
 			{
@@ -310,18 +311,6 @@ export const siteFields: INodeProperties[] = [
 					'Whether to remove the visitor password, so anyone with the address can open the site',
 			},
 		],
-	},
-
-	// ----- Delete ---------------------------------------------------------------------------------
-	{
-		displayName: 'Deletion Confirmation',
-		name: 'deletionConfirmation',
-		type: 'string',
-		default: '',
-		placeholder: 'e.g. my-portfolio',
-		description:
-			"Only for a site in a space protected against accidental deletion: type the site's subdomain here. It is never filled in for you.",
-		displayOptions: { show: { resource: ['site'], operation: ['delete'] } },
 	},
 
 	// ----- Get Many -------------------------------------------------------------------------------

@@ -159,11 +159,14 @@ export async function createSite(
 		.data;
 }
 
-export async function deleteSite(client: DroplyClient, id: string, confirm: string): Promise<void> {
+/**
+ * Delete a site. Droply refuses a site in a space protected against accidental deletion: those are
+ * deleted in its dashboard, where a person types the address, and nothing sent here unlocks them.
+ */
+export async function deleteSite(client: DroplyClient, id: string): Promise<void> {
 	await client.request<unknown>({
 		method: 'DELETE',
 		path: `/sites/${encodeURIComponent(id)}`,
-		json: confirm.trim() !== '' ? { confirm: confirm.trim() } : undefined,
 	});
 }
 
@@ -203,7 +206,7 @@ export async function removeCreatedSite(
 			return 'kept';
 		}
 
-		await deleteSite(client, site.id, '');
+		await deleteSite(client, site.id);
 		return 'removed';
 	} catch {
 		return 'failed';

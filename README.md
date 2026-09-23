@@ -55,7 +55,7 @@ plan does not include API access".
 | Create or Update             | Publishes to your site with this subdomain, and creates it the first time.                  |
 | Update                       | Publishes new content to a site at the same address.                                        |
 | Update Settings              | Changes a site's name, password or auto-expiry.                                             |
-| Delete                       | Deletes a site permanently.                                                                 |
+| Delete                       | Deletes a site permanently, unless it is in a space protected against accidental deletion.  |
 | Get / Get Many               | Returns one site, or all your sites.                                                        |
 
 **Deployment** (each version of a site is a deployment)
@@ -202,14 +202,14 @@ down, the node waits and retries by itself.
 
 ## Troubleshooting
 
-| Message                                               | What to do                                                                                       |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Droply did not accept the API token                   | Create a new token under API tokens and update the credential.                                   |
-| Your plan does not include API access                 | The API is included on Pro and higher.                                                           |
-| This token is not permitted to...                     | Use a Full access token from the API tokens page, not one made by a browser or editor extension. |
-| Droply needs a file name with an extension            | Set **File Name** in the options, for example `site.zip`.                                        |
-| The subdomain '...' belongs to another Droply account | Choose another subdomain.                                                                        |
-| Deleting a site in a protected space                  | Type the site's subdomain in **Deletion Confirmation**.                                          |
+| Message                                                       | What to do                                                                                       |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Droply did not accept the API token                           | Create a new token under API tokens and update the credential.                                   |
+| Your plan does not include API access                         | The API is included on Pro and higher.                                                           |
+| This token is not permitted to...                             | Use a Full access token from the API tokens page, not one made by a browser or editor extension. |
+| Droply needs a file name with an extension                    | Set **File Name** in the options, for example `site.zip`.                                        |
+| The subdomain '...' belongs to another Droply account         | Choose another subdomain.                                                                        |
+| This site is in a space protected against accidental deletion | Delete it from the Droply dashboard, or turn off deletion protection for its space first.        |
 
 ## Development
 

@@ -63,10 +63,41 @@ describe('explain', () => {
 		expect(result.description).toContain("'HTML': The html field is required.");
 	});
 
-	it('points a protected delete at Deletion Confirmation, and a plan limit at billing', () => {
-		expect(
-			explain(422, { errors: { confirm: ['Type the site name.'] } }, {}, base).description,
-		).toContain('Deletion Confirmation');
+	it('sends a protected delete to the dashboard without repeating the name to send', () => {
+		const answers = [
+			// Droply now: nothing sent through the API unlocks a protected site.
+			explain(
+				403,
+				{
+					message:
+						'This site is in a space protected against accidental deletion, so it can only be deleted from the dashboard. To delete it through the API, turn off deletion protection for its space first.',
+				},
+				{},
+				base,
+			),
+			// An older Droply asked for the subdomain in `confirm`, and named it.
+			explain(
+				422,
+				{
+					errors: {
+						confirm: [
+							'This is in a space protected against accidental deletion. Send its name in "confirm" to delete it: acme-portfolio',
+						],
+					},
+				},
+				{},
+				base,
+			),
+		];
+
+		for (const answer of answers) {
+			expect(answer.message).toBe('This site is in a space protected against accidental deletion');
+			expect(answer.description).toContain('Droply dashboard');
+			expect(`${answer.message} ${answer.description}`).not.toContain('acme-portfolio');
+		}
+	});
+
+	it('points a plan limit at billing', () => {
 		expect(
 			explain(
 				422,
