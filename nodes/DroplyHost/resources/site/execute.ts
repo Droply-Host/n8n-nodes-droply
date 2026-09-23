@@ -133,23 +133,13 @@ async function publishNew(
 	let deployment: DroplyDeployment | undefined;
 	try {
 		if (Object.keys(settings).length > 0) {
-			site = await updateSettings(client, site.id, settings);
+			site = protectedAsAsked(await updateSettings(client, site.id, settings), settings);
 		}
 		if (content !== null) {
 			deployment = await deploy(client, site.id, content, draft, randomBoundary);
 		}
 	} catch (error) {
-		// Only after a clear refusal: after a network error the upload may have landed.
-		const refused =
-			error instanceof DroplyHttpError ||
-			error instanceof Problem ||
-			error instanceof UploadTooLarge;
-		if (
-			created &&
-			refused &&
-			!(await removeCreatedSite(client, site)) &&
-			'note' in (error as object)
-		) {
+		if (created && refusedOutright(error) && (await removeCreatedSite(client, site)) === 'failed') {
 			(error as { note: string }).note =
 				`The empty site '${site.subdomain}' it created is still in your account; delete it from the Droply dashboard.`;
 		}
@@ -195,6 +185,34 @@ async function createSiteFor(
 	return { site, created: false };
 }
 
+/**
+ * The site Droply returned after a settings change, once it confirms the password asked for is on. The
+ * upload comes next, and it must not reach a site that is still public.
+ */
+function protectedAsAsked(site: DroplySite, settings: IDataObject): DroplySite {
+	if (settings.password !== undefined && site.password_protected !== true) {
+		throw new Problem(
+			'Droply did not confirm the password, so nothing was uploaded',
+			'Run the workflow again. If it keeps happening, contact support@droply.host.',
+		);
+	}
+
+	return site;
+}
+
+/**
+ * Whether Droply refused the request outright (a 4xx other than a timeout) or the node refused it before
+ * sending. Only then is the new site known to be empty: after a timeout or a server-side 5xx, the upload
+ * may have landed.
+ */
+function refusedOutright(error: unknown): boolean {
+	if (error instanceof DroplyHttpError) {
+		return error.status >= 400 && error.status < 500 && error.status !== 408;
+	}
+
+	return error instanceof Problem || error instanceof UploadTooLarge;
+}
+
 /** Update: a new version of an existing site, at the same address. */
 async function publishExisting(
 	ctx: IExecuteFunctions,
@@ -210,7 +228,7 @@ async function publishExisting(
 	const site = await resolveSite(client, siteParameter(ctx, i));
 
 	if (Object.keys(settings).length > 0) {
-		await updateSettings(client, site.id, settings);
+		protectedAsAsked(await updateSettings(client, site.id, settings), settings);
 	}
 
 	let deployment =

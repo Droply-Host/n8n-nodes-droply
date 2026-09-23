@@ -53,12 +53,17 @@ export async function readContent(
 	return { kind: 'files', entries: await readFiles(ctx, i, options.keepFolders !== false) };
 }
 
-/** Publishing options that are site settings, as the API's PATCH body. Empty when there are none. */
+/**
+ * Publishing options that are site settings, as the API's PATCH body. Empty when there are none.
+ *
+ * An option that was added but came out empty stops the item: an expression that finds no password
+ * must not publish in the clear the content it was meant to protect.
+ */
 export function settingsFromOptions(options: IDataObject, timeZone: string): IDataObject {
 	const changes: IDataObject = {};
 
-	const password = String(options.password ?? '');
-	if (password !== '') {
+	const password = passwordFrom(options);
+	if (password !== undefined) {
 		changes.password = password;
 	}
 
@@ -78,12 +83,12 @@ export function settingsFromCollection(settings: IDataObject, timeZone: string):
 		changes.name = String(settings.name).trim() === '' ? null : String(settings.name).trim();
 	}
 
-	const password = String(settings.password ?? '');
+	const password = passwordFrom(settings);
 	const removePassword = settings.removePassword === true;
-	if (password !== '' && removePassword) {
+	if (password !== undefined && removePassword) {
 		throw new Problem("Set 'Password' or 'Remove Password', not both");
 	}
-	if (password !== '') {
+	if (password !== undefined) {
 		changes.password = password;
 	}
 	if (removePassword) {
@@ -109,29 +114,55 @@ export function settingsFromCollection(settings: IDataObject, timeZone: string):
 	return changes;
 }
 
-/** Expire After (Hours) or Expire At, as the UTC moment the API takes; undefined when neither is set. */
+/**
+ * The Password option or setting, or undefined when it was not added. Added but empty is refused, so a
+ * missing value never quietly means "no protection".
+ */
+export function passwordFrom(values: IDataObject): string | undefined {
+	if (!('password' in values)) {
+		return undefined;
+	}
+
+	const password = String(values.password ?? '');
+	if (password.trim() === '') {
+		throw new Problem(
+			"'Password' is empty",
+			'It was added, so the site would have been published without the protection asked for. Give it a value, or remove the option.',
+		);
+	}
+
+	return password;
+}
+
+/**
+ * Expire After (Hours) or Expire At, as the UTC moment the API takes; undefined when neither was added.
+ * One that was added must hold a real value.
+ */
 export function expiryFrom(values: IDataObject, timeZone: string): string | undefined {
-	const hours = values.expireAfterHours;
-	const at = values.expireAt;
-	const hasHours = hours !== undefined && hours !== null && hours !== '';
-	const hasAt = at !== undefined && at !== null && String(at).trim() !== '';
+	const hasHours = 'expireAfterHours' in values;
+	const hasAt = 'expireAt' in values;
 
 	if (hasHours && hasAt) {
 		throw new Problem("Set 'Expire After (Hours)' or 'Expire At', not both");
 	}
 
 	if (hasHours) {
-		const value = Number(hours);
-		if (!Number.isFinite(value) || value <= 0) {
+		const raw = values.expireAfterHours;
+		const hours = raw === null || raw === '' ? Number.NaN : Number(raw);
+		if (!Number.isFinite(hours) || hours <= 0) {
 			throw new Problem("'Expire After (Hours)' must be a number of hours above zero");
 		}
-		return hoursFromNow(value);
+		return hoursFromNow(hours);
 	}
 
 	if (hasAt) {
-		const utc = toUtc(String(at), timeZone);
+		const at = String(values.expireAt ?? '');
+		const utc = toUtc(at, timeZone);
 		if (utc === null) {
-			throw new Problem(`'${String(at)}' is not a date and time`, "Pick a moment in 'Expire At'.");
+			throw new Problem(
+				at.trim() === '' ? "'Expire At' is empty" : `'${at}' is not a date and time`,
+				"Pick a moment in 'Expire At', or remove the option.",
+			);
 		}
 		return utc;
 	}

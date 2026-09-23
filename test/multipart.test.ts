@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_REQUEST_BYTES } from '../nodes/DroplyHost/shared/constants';
-import { buildMultipart, quote, UploadTooLarge } from '../nodes/DroplyHost/shared/multipart';
+import {
+	buildMultipart,
+	mediaType,
+	quote,
+	UploadTooLarge,
+} from '../nodes/DroplyHost/shared/multipart';
 
 const boundaries = (...values: string[]) => {
 	const queue = [...values];
@@ -69,6 +74,15 @@ describe('buildMultipart', () => {
 				boundaries('B1'),
 			),
 		).toThrow(UploadTooLarge);
+	});
+});
+
+describe('mediaType', () => {
+	it('lets only a bare type/subtype into the header', () => {
+		expect(mediaType('text/html')).toBe('text/html');
+		expect(mediaType('image/svg+xml')).toBe('image/svg+xml');
+		expect(mediaType('text/html\r\nX-Injected: 1')).toBe('application/octet-stream');
+		expect(mediaType('')).toBe('application/octet-stream');
 	});
 });
 

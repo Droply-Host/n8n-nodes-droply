@@ -6,6 +6,9 @@ import type { DroplySite, Envelope, Page } from './types';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const NOT_FOUND_HINT =
+	"Check the spelling, and that the credential's token belongs to the account that owns the site. To create it instead, use Create or Update.";
+
 export type SiteLocator = { mode: string; value: string };
 
 export function isUuid(value: string): boolean {
@@ -34,7 +37,10 @@ export async function resolveSite(client: DroplyClient, locator: SiteLocator): P
 	if (locator.mode === 'subdomain') {
 		const site = await findBySubdomain(client, value);
 		if (site === null) {
-			throw new Problem(`No site with the subdomain '${value}' was found in this Droply account`);
+			throw new Problem(
+				`No site with the subdomain '${value}' was found in this Droply account`,
+				NOT_FOUND_HINT,
+			);
 		}
 		return site;
 	}
@@ -49,7 +55,7 @@ export async function resolveSite(client: DroplyClient, locator: SiteLocator): P
 		}
 		const site = await findByHost(client, host);
 		if (site === null) {
-			throw new Problem(`No site at '${host}' was found in this Droply account`);
+			throw new Problem(`No site at '${host}' was found in this Droply account`, NOT_FOUND_HINT);
 		}
 		return site;
 	}
@@ -88,7 +94,12 @@ export async function findBySubdomain(
 	return walk(client, (site) => site.subdomain.toLowerCase() === wanted);
 }
 
-/** The caller's site served at $host (its Droply address or a connected custom domain), or null. */
+/**
+ * The caller's site served at $host (its Droply address or a connected custom domain), or null. The
+ * server's answer is trusted only when it says it applied the filter (`filters.host`). An older server
+ * ignores the filter and returns every site, and an account with one site must not have that site
+ * mistaken for any address asked about: then every page is walked, matching the address each site opens at.
+ */
 export async function findByHost(client: DroplyClient, host: string): Promise<DroplySite | null> {
 	const wanted = host.toLowerCase();
 	const first = await client.request<Page<DroplySite>>({
@@ -97,11 +108,10 @@ export async function findByHost(client: DroplyClient, host: string): Promise<Dr
 		qs: { host: wanted },
 	});
 
-	if (first.data.length <= 1) {
+	if (first.filters?.host === wanted) {
 		return first.data[0] ?? null;
 	}
 
-	// More than one answer means the server ignored the filter: match on the address each site opens at.
 	return walk(client, (site) => hostOf(site.live_url) === wanted);
 }
 
@@ -173,14 +183,30 @@ export async function updateSettings(
 
 /**
  * Remove a site this run created and could not fill, so a refused first publish does not leave an empty
- * site holding one of the account's slots. Returns false when that could not be done either.
+ * site holding one of the account's slots. Only while it is still empty: another run of the same workflow
+ * may have found it and published to it in the meantime, and that content must not go with it.
+ *
+ * 'removed', 'kept' (something else is on it now) or 'failed' (it could not be checked or removed).
  */
-export async function removeCreatedSite(client: DroplyClient, site: DroplySite): Promise<boolean> {
+export async function removeCreatedSite(
+	client: DroplyClient,
+	site: DroplySite,
+): Promise<'removed' | 'kept' | 'failed'> {
 	try {
+		const fresh = await getSite(client, site.id);
+		const versions = await client.request<Page<unknown>>({
+			method: 'GET',
+			path: `/sites/${encodeURIComponent(site.id)}/deployments`,
+			qs: { page: 1 },
+		});
+		if (fresh.current_deployment_id !== null || versions.data.length > 0) {
+			return 'kept';
+		}
+
 		await deleteSite(client, site.id, '');
-		return true;
+		return 'removed';
 	} catch {
-		return false;
+		return 'failed';
 	}
 }
 

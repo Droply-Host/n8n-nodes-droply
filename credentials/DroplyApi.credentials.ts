@@ -5,6 +5,11 @@ import type {
 	ICredentialType,
 	INodeProperties,
 } from 'n8n-workflow';
+import { DEFAULT_BASE_URL, DROPLY_ORIGIN, LOCAL_ORIGIN } from '../nodes/DroplyHost/shared/baseUrl';
+
+/** The Base URL as the node tidies it: trimmed, lowercased, without a trailing slash or /api/v1. */
+const ORIGIN =
+	'($credentials.baseUrl || "").trim().replace(/[/]+$/, "").replace(/[/]api[/]v1$/i, "").toLowerCase()';
 
 export class DroplyApi implements ICredentialType {
 	name = 'droplyApi';
@@ -30,8 +35,9 @@ export class DroplyApi implements ICredentialType {
 			displayName: 'Base URL',
 			name: 'baseUrl',
 			type: 'string',
-			default: 'https://droply.host',
-			description: 'Leave as it is unless Droply support asks you to change it',
+			default: DEFAULT_BASE_URL,
+			description:
+				'Leave as it is. Droply support will never ask you to change it. Only droply.host addresses and a Droply running on this computer are accepted.',
 		},
 	];
 
@@ -44,11 +50,11 @@ export class DroplyApi implements ICredentialType {
 		},
 	};
 
+	// Same rule as the node: the token is only ever sent to a Droply address. Anything else is tested
+	// against https://droply.host instead, where a token meant for another host simply fails.
 	test: ICredentialTestRequest = {
 		request: {
-			// Tolerates a trailing slash or a pasted /api/v1, as the node's own requests do.
-			baseURL:
-				'={{$credentials.baseUrl.trim().replace(/\\/+$/, "").replace(/\\/api\\/v1$/, "")}}/api/v1',
+			baseURL: `={{ /${DROPLY_ORIGIN}/.test(${ORIGIN}) || /${LOCAL_ORIGIN}/.test(${ORIGIN}) ? ${ORIGIN} : "${DEFAULT_BASE_URL}" }}/api/v1`,
 			url: '/user',
 			method: 'GET',
 		},

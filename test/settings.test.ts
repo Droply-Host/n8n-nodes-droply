@@ -50,6 +50,21 @@ describe('expiryFrom', () => {
 	});
 });
 
+describe('an option added but left empty', () => {
+	it('stops the item instead of publishing without the protection asked for', () => {
+		// e.g. Password = {{ $json.password }} on an item with no password field.
+		for (const options of [
+			{ password: '' },
+			{ password: '   ' },
+			{ expireAt: '' },
+			{ expireAfterHours: '' },
+		]) {
+			expect(() => settingsFromOptions(options, 'UTC'), JSON.stringify(options)).toThrow(Problem);
+		}
+		expect(() => settingsFromCollection({ password: '' }, 'UTC')).toThrow(Problem);
+	});
+});
+
 describe('settingsFromOptions', () => {
 	it('turns publishing options into the settings sent before the upload', () => {
 		expect(settingsFromOptions({ password: 'hunter22', waitUntilLive: true }, 'UTC')).toEqual({
@@ -80,19 +95,31 @@ describe('settingsFromCollection', () => {
 });
 
 describe('normalizeBaseUrl', () => {
-	it('accepts https and a local Droply, and trims what people paste', () => {
+	it("accepts Droply's own addresses and a local Droply, and trims what people paste", () => {
 		expect(normalizeBaseUrl('https://droply.host/')).toBe('https://droply.host');
-		expect(normalizeBaseUrl(' https://droply.host/api/v1 ')).toBe('https://droply.host');
+		expect(normalizeBaseUrl(' https://Droply.host/api/v1 ')).toBe('https://droply.host');
+		expect(normalizeBaseUrl('https://staging.droply.host')).toBe('https://staging.droply.host');
 		expect(normalizeBaseUrl('')).toBe('https://droply.host');
 		expect(normalizeBaseUrl('http://host.docker.internal:8000')).toBe(
 			'http://host.docker.internal:8000',
 		);
+		expect(normalizeBaseUrl('http://localhost:7777')).toBe('http://localhost:7777');
 		expect(normalizeBaseUrl('http://droply.test')).toBe('http://droply.test');
 	});
 
-	it('refuses plain http to anything but this machine, and nonsense', () => {
-		expect(() => normalizeBaseUrl('http://droply.host')).toThrow(Problem);
-		expect(() => normalizeBaseUrl('not a url')).toThrow(Problem);
+	it('never lets the token go anywhere else', () => {
+		// A message posing as support, or someone who can edit the credential, cannot redirect the token.
+		for (const url of [
+			'https://evil.example',
+			'https://droply.host.evil.example',
+			'https://evil-droply.host',
+			'https://user@droply.host',
+			'https://droply.host:8443',
+			'http://droply.host',
+			'not a url',
+		]) {
+			expect(() => normalizeBaseUrl(url), url).toThrow(Problem);
+		}
 	});
 });
 

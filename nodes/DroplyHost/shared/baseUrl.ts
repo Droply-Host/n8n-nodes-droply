@@ -1,34 +1,38 @@
 import { Problem } from './problem';
 
-/** http:// is only for a Droply running on this machine or a private test host. */
-const LOCAL_HOST =
-	/^(localhost|127\.0\.0\.1|\[::1\]|host\.docker\.internal)$|\.(localhost|test|localtest\.me)$/i;
+/**
+ * The only places the token may be sent. A free-form Base URL would let anyone who can edit the
+ * credential, or a message posing as support, send the token to a host of their choosing, so the node
+ * and the credential test accept only Droply's own addresses and a Droply running on this machine.
+ * Written with [/] rather than \/ so the same text works as a regex literal in the credential's test
+ * expression.
+ */
+export const DROPLY_ORIGIN = '^https:[/][/]([a-z0-9-]+[.])*droply[.]host$';
+
+/** http:// or https:// to a Droply on this machine or a private test host, for development. */
+export const LOCAL_ORIGIN =
+	'^https?:[/][/](localhost|127[.]0[.]0[.]1|host[.]docker[.]internal|([a-z0-9-]+[.])+(localhost|test|localtest[.]me))(:[0-9]+)?$';
+
+export const DEFAULT_BASE_URL = 'https://droply.host';
 
 /**
- * The credential's Base URL, tidied: a trailing slash or a pasted /api/v1 is dropped, and anything but
- * https is refused unless it points at this machine, so the token never crosses the network in clear.
+ * The credential's Base URL, tidied (a trailing slash or a pasted /api/v1 is dropped) and checked
+ * against the addresses above.
  */
 export function normalizeBaseUrl(raw: string): string {
-	const value = (raw.trim() || 'https://droply.host')
+	const origin = (raw.trim() || DEFAULT_BASE_URL)
 		.replace(/\/+$/, '')
-		.replace(/\/api\/v1$/i, '');
+		.replace(/\/api\/v1$/i, '')
+		.toLowerCase();
 
-	const url = URL.canParse(value) ? new URL(value) : null;
-	if (url === null) {
+	if (!new RegExp(DROPLY_ORIGIN).test(origin) && !new RegExp(LOCAL_ORIGIN).test(origin)) {
 		throw new Problem(
-			`'${raw}' is not a valid Base URL`,
-			"Set the Droply API credential's Base URL to https://droply.host.",
+			`'${raw.trim()}' is not a Droply address`,
+			"Set the Droply API credential's Base URL to https://droply.host. Droply support will never ask you to change it.",
 		);
 	}
 
-	if (url.protocol !== 'https:' && !(url.protocol === 'http:' && LOCAL_HOST.test(url.hostname))) {
-		throw new Problem(
-			'The Base URL must start with https://',
-			"Set the Droply API credential's Base URL to https://droply.host.",
-		);
-	}
-
-	return `${url.protocol}//${url.host}${url.pathname.replace(/\/+$/, '')}`;
+	return origin;
 }
 
 /** n8n hands back JSON as an object, a string or a Buffer depending on the request; read all three. */

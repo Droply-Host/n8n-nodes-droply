@@ -40,7 +40,7 @@ export function buildMultipart(
 	head +=
 		`--${boundary}\r\n` +
 		`Content-Disposition: form-data; name="${quote(file.field)}"; filename="${quote(file.filename)}"\r\n` +
-		`Content-Type: ${file.contentType}\r\n\r\n`;
+		`Content-Type: ${mediaType(file.contentType)}\r\n\r\n`;
 	const tail = `\r\n--${boundary}--\r\n`;
 
 	const length = Buffer.byteLength(head) + dataLength + Buffer.byteLength(tail);
@@ -67,11 +67,21 @@ export function quote(value: string): string {
 }
 
 export class UploadTooLarge extends Error {
+	/** Added when a clean-up after this refusal also went wrong, so the user knows what was left behind. */
+	note = '';
+
 	constructor(readonly bytes: number) {
 		super(
 			`This upload would be ${megabytes(bytes)} MB, and Droply accepts at most ${megabytes(MAX_REQUEST_BYTES)} MB in one upload`,
 		);
 	}
+}
+
+/** A bare type/subtype, or octet-stream: a MIME type from the binary must not carry anything else into the header. */
+export function mediaType(value: string): string {
+	return /^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+$/.test(value)
+		? value
+		: 'application/octet-stream';
 }
 
 function megabytes(bytes: number): string {

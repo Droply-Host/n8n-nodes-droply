@@ -38,7 +38,8 @@ verified it.
 1. In Droply, go to **Integrations > API tokens** and create a token. Tokens made there have **Full
    access**. Copy it now: it is shown only once.
 2. In n8n, create a **Droply API** credential and paste the token. Leave **Base URL** as
-   `https://droply.host`.
+   `https://droply.host`. Droply support will never ask you to change it, and the node only sends the
+   token to droply.host (or to a Droply running on your own computer, for development).
 
 The credential test reads your account. A token on a plan without API access fails the test with "Your
 plan does not include API access".
@@ -101,7 +102,9 @@ default).
 ### Drafts, publishing and rolling back
 
 - Turn on **Publish As Draft** to save a version without changing what the site serves.
-- Publish the draft later with **Deployment > Publish Draft**.
+- Publish it later with **Deployment > Publish Draft** and **A Specific Draft**, passing the draft's
+  deployment ID from the step that saved it (`{{ $('Save draft').item.json.deployment.id }}`). **Latest
+  Draft of a Site** publishes whichever draft is newest, whoever saved it, so keep it out of approval flows.
 - **Deployment > Roll Back** makes the previous version live again, at the same address and without
   uploading anything.
 
@@ -112,8 +115,11 @@ Drafts and rollback are included on the Pro plan and higher.
 - **Password** protects the site with a visitor password.
 - **Expire After (Hours)** or **Expire At** takes the site offline behind a "link expired" page at that
   moment. The content is kept, so you can bring it back.
-- On Create and Create or Update, both settings are applied before the upload.
+- On Create and Create or Update, both settings are applied before the upload. An option you added that
+  comes out empty (an expression that finds no password) stops the item rather than publishing without it.
 - **Site > Update Settings** changes or removes either setting later.
+- The password is stored in the workflow like any other parameter: anyone who can open the workflow or its
+  executions can read it.
 
 ### Output
 
@@ -161,14 +167,19 @@ as the API gives them. Delete returns `{ "deleted": true }`.
 
 **Review before it goes live**
 
-1. Droply Host: Site, Update, with Publish As Draft on.
+1. Droply Host, named Save draft: Site, Update, with Publish As Draft on.
 2. Slack: Send and Wait for approval.
-3. If approved, Droply Host: Deployment, Publish Draft, Latest Draft of a Site.
+3. If approved, Droply Host: Deployment, Publish Draft, A Specific Draft, Deployment ID
+   `{{ $('Save draft').item.json.deployment.id }}`. Only the version that was approved goes live.
 
 ## Using it as an AI Agent tool
 
-- Attach **Droply Host** to an AI Agent as a tool. Use **Source: HTML**, and let the model fill **HTML**
-  and **Subdomain** with `$fromAI()`.
+- Attach **Droply Host** to an AI Agent as a tool, with **Source: HTML**, and let the model fill **HTML**
+  with `$fromAI()`.
+- **Choose the site yourself** in the node: a fixed subdomain for Create or Update, or a fixed site for
+  Update. A chat can carry instructions written by someone else, and a model allowed to choose could be
+  talked into publishing over any site in your account. If the model must pick the name, use **Create**,
+  which never touches an existing site.
 - Agents cannot pass binary files, so File and Multiple Files are for ordinary workflows.
 - On self-hosted n8n, set `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true` to use community nodes as tools.
 - Don't give an agent the Delete operation.

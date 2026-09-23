@@ -66,11 +66,12 @@ export const deploymentFields: INodeProperties[] = [
 			{
 				name: 'Latest Draft of a Site',
 				value: 'latest',
-				description: 'The newest draft saved on the site',
+				description:
+					'The newest draft on the site, whoever saved it. In an approval flow use A Specific Draft, so only the version that was approved goes live.',
 			},
 			{ name: 'A Specific Draft', value: 'id', description: 'A draft given by its deployment ID' },
 		],
-		default: 'latest',
+		default: 'id',
 		description: 'Which draft to publish',
 		displayOptions: { show: { resource: ['deployment'], operation: ['publish'] } },
 	},

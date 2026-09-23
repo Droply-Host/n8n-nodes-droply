@@ -44,7 +44,7 @@ export function toNodeError(
 
 	if (error instanceof UploadTooLarge) {
 		return new NodeOperationError(ctx.getNode(), error.message, {
-			description: 'Publish fewer or smaller files in one go.',
+			description: withNote('Publish fewer or smaller files in one go.', error.note),
 			itemIndex,
 		});
 	}
