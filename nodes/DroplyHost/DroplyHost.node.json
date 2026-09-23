@@ -1,0 +1,28 @@
+{
+	"node": "n8n-nodes-droply.droplyHost",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Development", "Developer Tools"],
+	"alias": [
+		"static site",
+		"hosting",
+		"deploy",
+		"publish",
+		"html",
+		"website",
+		"landing page",
+		"droply"
+	],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://droply.host/docs/integrations/n8n#connect"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://droply.host/docs/integrations/n8n"
+			}
+		]
+	}
+}

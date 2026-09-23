@@ -1,0 +1,64 @@
+{
+	"name": "n8n-nodes-droply",
+	"version": "0.1.0",
+	"description": "Publish HTML, files and static sites on Droply from n8n: create and update sites, save drafts, publish, roll back, and manage passwords and expiry.",
+	"license": "MIT",
+	"homepage": "https://droply.host/docs/integrations/n8n",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"droply",
+		"static site",
+		"hosting",
+		"deploy",
+		"publish",
+		"html"
+	],
+	"author": {
+		"name": "Droply",
+		"email": "contact@droply.host"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Droply-Host/n8n-nodes-droply.git"
+	},
+	"bugs": {
+		"url": "https://github.com/Droply-Host/n8n-nodes-droply/issues"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"test": "vitest run",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/DroplyApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/DroplyHost/DroplyHost.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "^0.49.1",
+		"@types/node": "^22.20.4",
+		"eslint": "^9.39.4",
+		"fflate": "^0.8.3",
+		"prettier": "^3.8.3",
+		"release-it": "^20.2.0",
+		"typescript": "^5.9.3",
+		"vitest": "^5.0.1"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}
