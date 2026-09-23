@@ -47,6 +47,6 @@ export type Page<T> = {
 	data: T[];
 	links?: { next?: string | null };
 	meta?: { current_page?: number; last_page?: number; total?: number };
-	/** The filters the server applied to GET /sites, echoed back. Absent from servers older than ADR-231. */
+	/** The filters the server applied to GET /sites, echoed back. Absent from older versions of the API. */
 	filters?: { subdomain?: string; host?: string };
 };

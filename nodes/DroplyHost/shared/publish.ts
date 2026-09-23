@@ -17,7 +17,7 @@ export type Content =
  * made. Processing continues on Droply's side; wait.ts follows it.
  *
  * - HTML goes as JSON text when it fits the API's text limit, and as an index.html file when it does
- *   not (ADR-183 on the server: big content travels as files). Both are served identically.
+ *   not (the API's rule: big content travels as files). Both are served identically.
  * - One file goes as itself, so a lone PDF still gets the PDF viewer.
  * - Several files go as one ZIP built here: the API takes exactly one file per deploy.
  */

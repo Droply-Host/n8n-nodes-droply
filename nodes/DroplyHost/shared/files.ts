@@ -1,6 +1,6 @@
 /**
  * How n8n binary data becomes what Droply receives. Droply decides how to serve an upload from its
- * file name's EXTENSION (SupportedTypes on the server): a .zip is extracted as a site, .html is a page,
+ * file name's EXTENSION: a .zip is extracted as a site, .html is a page,
  * .pdf gets the viewer, and so on. So every upload must carry a real name with an extension.
  */
 

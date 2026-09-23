@@ -39,7 +39,7 @@ verified it.
    access**. Copy it now: it is shown only once.
 2. In n8n, create a **Droply API** credential and paste the token. Leave **Base URL** as
    `https://droply.host`. Droply support will never ask you to change it, and the node only sends the
-   token to droply.host (or to a Droply running on your own computer, for development).
+   token to droply.host (or to a local address, for development).
 
 The credential test reads your account. A token on a plan without API access fails the test with "Your
 plan does not include API access".
@@ -218,7 +218,7 @@ npm install
 npm run build
 npm run lint
 npm test
-npm run dev   # runs n8n with this node at http://localhost:5678 (needs Docker or Podman)
+npm run dev   # runs n8n with this node at http://localhost:5678
 ```
 
 ## Resources

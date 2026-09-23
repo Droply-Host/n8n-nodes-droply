@@ -37,7 +37,7 @@ export class DroplyApi implements ICredentialType {
 			type: 'string',
 			default: DEFAULT_BASE_URL,
 			description:
-				'Leave as it is. Droply support will never ask you to change it. Only droply.host addresses and a Droply running on this computer are accepted.',
+				'Leave as it is. Droply support will never ask you to change it. Only droply.host addresses (and local addresses, for development) are accepted.',
 		},
 	];
 
